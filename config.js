@@ -1,7 +1,7 @@
 // 課表系統前端設定檔案
 const CONFIG = {
   title: "臺中市立霧峰農工 115年度暑期&營隊輔導課表查詢系統",
-  schoolName: "霧峰農工",
+  schoolName: "市立霧峰農工",
   timetableCsv: "./timetable_wufa.csv",
   homeroomsJson: "./homerooms_wufa.json",
   periodTimes: {
