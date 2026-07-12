@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>霧峰農工 115年度暑期輔導課表查詢系統</title>
+    <style>
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .select-group {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        select {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 250px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            text-align: center;
+        }
+        th {
+            background-color: #4a5568;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .subject {
+            font-weight: bold;
+            color: #2b6cb0;
+        }
+        .teacher {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="school-title">臺中市立霧峰農工 課表查詢系統</h1>
+        <div class="select-group">
+            <label for="class-select">選擇班級：</label>
+            <select id="class-select">
+                <option value="">-- 請選擇班級 --</option>
+            </select>
+        </div>
+        <div id="timetable-container">
+            <table id="timetable-table">
+                <thead>
+                    <tr>
+                        <th>節次 / 時間</th>
+                        <th>星期一</th>
+                        <th>星期二</th>
+                        <th>星期三</th>
+                        <th>星期四</th>
+                        <th>星期五</th>
+                    </tr>
+                </thead>
+                <tbody id="timetable-body">
+                    <!-- 動態渲染 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 載入設定檔與核心模擬邏輯 -->
+    <script src="config.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById('school-title').innerText = CONFIG.title;
+            
+            // 模擬讀取 homerooms 填入選單
+            fetch(CONFIG.homeroomsJson)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('class-select');
+                    const classes = Object.values(data)[0];
+                    classes.forEach(cls => {
+                        const opt = document.createElement('option');
+                        opt.value = cls;
+                        opt.textContent = cls;
+                        select.appendChild(opt);
+                    });
+                });
+
+            // 監聽選單切換
+            document.getElementById('class-select').addEventListener('change', function(e) {
+                const targetClass = e.target.value;
+                if (!targetClass) return;
+
+                fetch(CONFIG.timetableCsv)
+                    .then(res => res.text())
+                    .then(csvText => {
+                        const lines = csvText.split('\n').filter(l => l.trim());
+                        const headers = lines[0].split(',');
+                        const rows = lines.slice(1).map(l => l.split(','));
+                        
+                        // 過濾出目標班級的課表
+                        const filtered = rows.filter(r => r[0] === targetClass);
+                        
+                        // 建立節次結構
+                        const tbody = document.getElementById('timetable-body');
+                        tbody.innerHTML = '';
+
+                        for (let p = 1; p <= 7; p++) {
+                            const tr = document.createElement('tr');
+                            const timeStr = CONFIG.periodTimes[p] || '';
+                            tr.innerHTML = `<td><strong>第 ${p} 節</strong><br><small>${timeStr}</small></td>`;
+                            
+                            for (let d = 1; d <= 5; d++) {
+                                const cellData = filtered.find(r => parseInt(r[1]) === d && parseInt(r[2]) === p);
+                                if (cellData && cellData[3]) {
+                                    tr.innerHTML += `<td><div class="subject">${cellData[3]}</div><div class="teacher">${cellData[4] || ''}</div></td>`;
+                                } else {
+                                    tr.innerHTML += `<td>-</td>`;
+                                }
+                            }
+                            tbody.appendChild(tr);
+                        }
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
